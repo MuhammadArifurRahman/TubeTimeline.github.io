@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Timestamp Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Lateef:wght@400;700&display=swap" rel="stylesheet">
+    <style type="text/css">
+        #video-container {
+            position: relative;
+            width: 99%;
+            padding-bottom: 56.25%;
+            height: 0;
+        }
+
+        #video-container iframe {
+            position: absolute!important;
+            top: 0!important;
+            left: 0!important;
+            width: 99%!important;
+            height: 100%!important;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+    <header class="w-full bg-blue-600 text-white py-4 shadow-md sticky top-0 z-10 relative">
+        <div class="max-w-7xl mx-auto px-4 flex items-center justify-between">
+            <h1 class="text-2xl font-bold tracking-tight">YouTube Timestamp Generator</h1>
+            <!-- Code Icon Button -->
+            <button id="show-json-modal"
+                class="ml-4 p-2 rounded-full bg-white hover:bg-blue-100 text-blue-600 shadow transition-colors"
+                title="Show Timestamps JSON">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor" class="w-7 h-7">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M16.88 3.549a9.001 9.001 0 0 1 0 16.902M7.12 3.549a9.001 9.001 0 0 0 0 16.902M12 7.5v9m-4.5-4.5h9" />
+                </svg>
+            </button>
+        </div>
+    </header>
+    <!-- Modal for JSON Output -->
+    <div id="json-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
+        <div class="bg-white rounded-lg shadow-lg max-w-2xl w-full p-6 relative">
+            <button id="close-json-modal"
+                class="absolute top-2 right-2 text-gray-500 hover:text-red-500 text-2xl font-bold">&times;</button>
+            <h2 class="text-xl font-semibold mb-4">Timestamps (JSON Format)</h2>
+            <pre id="modal-json-output"
+                class="bg-gray-900 text-green-200 rounded p-4 text-sm font-mono overflow-x-auto whitespace-pre"></pre>
+        </div>
+    </div>
+    <main class="w-full flex flex-col md:flex-row gap-8">
+        <!-- Left Column: Timestamps and Controls -->
+        <section class="w-full md:w-1/4 flex flex-col gap-6">
+            <div class="bg-white rounded-xl shadow p-6 flex flex-col gap-4">
+                <div>
+                    <label for="video-id-input" class="block text-sm font-medium text-gray-700 mb-1">YouTube Video
+                        ID</label>
+                    <div class="flex gap-2 items-center">
+                        <input id="video-id-input" type="text" value="KGrjOI4kQk0"
+                            class="flex-1 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 text-lg"
+                            placeholder="Enter YouTube Video ID...">
+                        <button id="load-video-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md shadow-sm transition-colors">Load</button>
+                        <a id="video-link" href="https://youtube.com/watch?v=KGrjOI4kQk0" target="_blank"
+                            class="text-blue-500 hover:text-blue-700" aria-label="Open video in new tab">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="24"
+                                height="24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                <div class="flex gap-2 flex-wrap">
+                    <button id="generate-json"
+                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded shadow">Generate JSON</button>
+                    <button id="generate-youtube-json"
+                        class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded shadow">YT JSON</button>
+                    <button id="import-json"
+                        class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded shadow">Import JSON</button>
+                    <button id="load-from-local-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded shadow hidden">Load from Local</button>
+                </div>
+                <textarea id="import-area" class="w-full h-24 border border-gray-300 rounded px-3 py-2 mt-2 hidden"
+                    placeholder="Paste your JSON here..."></textarea>
+                <pre id="json-output"
+                    class="w-full rounded p-4 text-sm font-mono mt-2 relative transition-colors duration-200"></pre>
+            </div>
+            <div class="bg-white rounded-xl shadow p-6 flex-1 overflow-y-auto max-h-[60vh]">
+                <h2 class="text-lg font-semibold mb-4">Timestamps</h2>
+                <div id="timestamps" class="flex flex-col gap-4"></div>
+            </div>
+        </section>
+        <!-- Right Column: Video Player -->
+        <section class="w-full md:w-3/4 flex flex-col gap-6">
+            <div id="video-container" class="bg-white rounded-xl shadow p-6 flex flex-col items-center">
+                <h2 class="text-lg font-semibold mb-4 self-start">Video Player</h2>
+                <div id="player"  ></div>
+            </div>
+        </section>
+    </main>
+    <script>
+        // Load the YouTube IFrame API
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        var player;
+        let timestamps = [];
+        var nextId = 1;
+        var currentEntryIndex = -1; // Track the current timestamp index
+        var videoId = document.getElementById('video-id-input').value;
+        var loopTimeout = null;
+
+        // Save timestamps to localStorage
+        function saveTimestamps() {
+            const data = {
+                timestamps: timestamps,
+                expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days from now
+            };
+            localStorage.setItem(`timestamps_${videoId}`, JSON.stringify(data));
+        }
+
+        // Load timestamps from localStorage
+        function loadTimestamps() {
+            const data = localStorage.getItem(`timestamps_${videoId}`);
+            let transcriptData = [];
+            if (data) {
+                const parsedData = JSON.parse(data);
+                if (parsedData.expires > Date.now()) {
+                    transcriptData = parsedData.timestamps;
+                } else {
+                    localStorage.removeItem(`timestamps_${videoId}`);
+                }
+            }
+            if (Array.isArray(transcriptData) && transcriptData.length > 0) {
+                transcriptData.forEach(ts => {
+                    if (ts.looping === undefined) {
+                        ts.looping = false;
+                    }
+                });
+                timestamps = transcriptData;
+            } else {
+                timestamps = [];
+            }
+            nextId = timestamps.length > 0 ? Math.max(...timestamps.map(item => item.id)) + 1 : 1;
+            displayTimestamps();
+        }
+
+        // Clear localStorage data for the current video
+        function clearLocalStorage() {
+            localStorage.removeItem(`timestamps_${videoId}`);
+            timestamps = [];
+            nextId = 1;
+            displayTimestamps();
+            alert('Local storage cleared for this video.');
+        }
+
+        function setIframeAllowAttrs() {
+            setTimeout(() => {
+                const iframe = document.querySelector('#player iframe');
+                if (iframe) {
+                     iframe.setAttribute('allow', 'ccelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; allow-forms; allow-scaripts; allow-pointer-lock; allow-same-origin;');
+                }
+            }, 500);
+        }
+
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+
+                videoId: videoId,
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+            setIframeAllowAttrs();
+        }
+
+        function onPlayerReady(event) {
+            // When player is ready, clear timestamps and check for a local backup.
+            timestamps = [];
+            nextId = 1;
+            displayTimestamps();
+            manageLocalDataButton();
+        }
+
+        function manageLocalDataButton() {
+            const loadBtn = document.getElementById('load-from-local-btn');
+            const data = localStorage.getItem(`timestamps_${videoId}`);
+            if (data) {
+                const parsedData = JSON.parse(data);
+                if (parsedData.expires > Date.now()) {
+                    loadBtn.classList.remove('hidden');
+                }
+                else {
+                    localStorage.removeItem(`timestamps_${videoId}`);
+                    loadBtn.classList.add('hidden');
+                }
+            }
+            else {
+                loadBtn.classList.add('hidden');
+            }
+        }
+
+        document.getElementById('load-from-local-btn').addEventListener('click', function() {
+            loadTimestamps();
+            this.classList.add('hidden');
+        });
+
+        function onPlayerStateChange(event) {
+            if (event.data == YT.PlayerState.PAUSED) {
+                if (currentEntryIndex !== -1 && timestamps[currentEntryIndex] && timestamps[currentEntryIndex].looping) {
+                    const nextEntryIndex = currentEntryIndex + 1;
+                    if (nextEntryIndex < timestamps.length) {
+                        const currentTime = player.getCurrentTime();
+                        const nextTime = timestamps[nextEntryIndex].time;
+                        if (Math.abs(currentTime - nextTime) < 0.5) {
+                            clearTimeout(loopTimeout);
+                            loopTimeout = setTimeout(() => {
+                                playVideoFromTime(timestamps[currentEntryIndex].time, currentEntryIndex);
+                            }, 1000);
+                            return;
+                        }
+                    }
+                }
+
+                var currentTime = player.getCurrentTime();
+                const maxTime = timestamps.length > 0 ? Math.max(...timestamps.map(t => t.time)) : -1;
+                if (currentTime > maxTime) {
+                    timestamps.push({
+                        id: nextId++,
+                        text: `Text for timestamp ${nextId}`,
+                        time: currentTime,
+                        looping: false
+                    });
+                    saveTimestamps();
+                    displayTimestamps();
+                }
+            }
+            if (event.data === YT.PlayerState.PLAYING) {
+                clearTimeout(loopTimeout);
+                const checkTime = () => {
+                    if (player.getPlayerState() !== YT.PlayerState.PLAYING) {
+                        return;
+                    }
+                    const currentTime = player.getCurrentTime();
+                    const nextEntryIndex = currentEntryIndex + 1;
+                    if (
+                        currentEntryIndex !== -1 &&
+                        nextEntryIndex < timestamps.length &&
+                        currentTime >= timestamps[nextEntryIndex].time
+                    ) {
+                        player.pauseVideo();
+                    } else {
+                        requestAnimationFrame(checkTime);
+                    }
+                };
+                requestAnimationFrame(checkTime);
+            }
+            if (event.data == YT.PlayerState.ENDED) {
+                if (currentEntryIndex === timestamps.length - 1 && timestamps[currentEntryIndex] && timestamps[currentEntryIndex].looping) {
+                    clearTimeout(loopTimeout);
+                    loopTimeout = setTimeout(() => {
+                        playVideoFromTime(timestamps[currentEntryIndex].time, currentEntryIndex);
+                    }, 1000);
+                }
+            }
+        }
+
+        function playVideoFromTime(seconds, index) {
+            if (player && player.seekTo) {
+                player.seekTo(seconds, true);
+                player.unMute();
+                player.playVideo();
+                currentEntryIndex = index;
+            }
+        }
+
+        function toggleLoop(index) {
+            const currentlyLooping = timestamps[index].looping;
+            timestamps.forEach(ts => ts.looping = false);
+            clearTimeout(loopTimeout);
+            if (!currentlyLooping) {
+                timestamps[index].looping = true;
+                playVideoFromTime(timestamps[index].time, index);
+            }
+            displayTimestamps();
+        }
+
+        function toggleLoop(index) {
+            const currentlyLooping = timestamps[index].looping;
+            timestamps.forEach(ts => ts.looping = false);
+            clearTimeout(loopTimeout);
+            if (!currentlyLooping) {
+                timestamps[index].looping = true;
+                playVideoFromTime(timestamps[index].time, index);
+            }
+            displayTimestamps();
+        }
+
+        function displayTimestamps() {
+            var timestampList = document.getElementById('timestamps');
+            timestampList.innerHTML = '';
+            timestamps.forEach((item, index) => {
+                const timestampHTML = `
+                <div class="flex flex-col gap-2 bg-gray-50 rounded-lg p-4 shadow border border-gray-200">
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-blue-700 cursor-pointer" ondblclick="this.nextElementSibling.style.display='inline-block';this.style.display='none';this.nextElementSibling.focus();">${formatTime(item.time)}</span>
+                        <input type="text" value="${formatTime(item.time)}" class="hidden border rounded px-2 py-1 w-20 text-center" onblur="updateTime(this, ${index})">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span dir="rtl" class="text-2xl font-arabic cursor-pointer" ondblclick="this.nextElementSibling.style.display='inline-block';this.style.display='none';this.nextElementSibling.focus();">${item.text}</span>
+                        <textarea dir="rtl" class="hidden border rounded px-2 py-1 w-full text-2xl font-arabic" onblur="updateText(this, ${index})">${item.text}</textarea>
+                    </div>
+                    <div class="flex gap-2 mt-2">
+                        <button onclick="playVideoFromTime('${item.time}', ${index})" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">Play</button>
+                        <button onclick="removeTimestamp(${index})" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Delete</button>
+                        <button onclick="toggleLoop(${index})" class="${item.looping ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 hover:bg-gray-500'} text-white px-3 py-1 rounded transition-colors">Loop</button>
+                    </div>
+                </div>
+                `;
+                timestampList.insertAdjacentHTML('beforeend', timestampHTML);
+            });
+        }
+
+        // Helper for updating time
+        window.updateTime = function (input, index) {
+            const newTime = parseTime(input.value);
+            if (newTime !== null) {
+                timestamps[index].time = newTime;
+                saveTimestamps();
+            }
+            displayTimestamps();
+        };
+        // Helper for updating text
+        window.updateText = function (input, index) {
+            timestamps[index].text = input.value;
+            saveTimestamps();
+            displayTimestamps();
+        };
+
+        function removeTimestamp(index) {
+            timestamps.splice(index, 1);
+            saveTimestamps();
+            displayTimestamps();
+        }
+
+        function formatTime(seconds) {
+            var minutes = Math.floor(seconds / 60);
+            var secs = Math.floor(seconds % 60);
+            return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        function parseTime(timeString) {
+            var parts = timeString.split(':');
+            if (parts.length === 2) {
+                var minutes = parseInt(parts[0], 10);
+                var seconds = parseInt(parts[1], 10);
+                if (!isNaN(minutes) && !isNaN(seconds)) {
+                    return minutes * 60 + seconds;
+                }
+            }
+            return null;
+        }
+
+        // Generate JSON
+        document.getElementById('generate-json').onclick = function () {
+            const currentVideoId = document.getElementById('video-id-input').value;
+            const dataToExport = {
+                videoId: currentVideoId,
+                timestamps: timestamps
+            };
+            var jsonOutput = JSON.stringify(dataToExport, null, 2);
+            setJsonOutput(jsonOutput);
+            document.getElementById('timestamps_json') && (document.getElementById('timestamps_json').value = jsonOutput);
+            addCopyAndClearButtons(jsonOutput);
+        };
+
+        // Generate YouTube JSON
+        document.getElementById('generate-youtube-json').onclick = function () {
+            const formatTime = (seconds) => {
+                const minutes = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${minutes}:${secs.toString().padStart(2, '0')}`;
+            };
+            const youtubeComments = timestamps.map(item => `${item.text} (${formatTime(item.time)})`);
+            const output = youtubeComments.join("\n");
+            setJsonOutput(output);
+            addCopyAndClearButtons(output);
+        };
+
+        function addCopyAndClearButtons(content) {
+            const output = document.getElementById('json-output');
+            // Remove previous buttons
+            output.querySelectorAll('button').forEach(btn => btn.remove());
+            // Copy button
+            const copyButton = document.createElement('button');
+            copyButton.className = 'absolute top-2 right-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded shadow';
+            copyButton.innerText = 'Copy';
+            copyButton.onclick = function () {
+                navigator.clipboard.writeText(content).then(function () {
+                    alert('Copied to clipboard!');
+                }).catch(function () {
+                    alert('Failed to copy.');
+                });
+            };
+            output.appendChild(copyButton);
+            // Clear button
+            const clearButton = document.createElement('button');
+            clearButton.className = 'absolute top-2 right-20 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded shadow';
+            clearButton.innerText = 'Clear';
+            clearButton.onclick = function () { setJsonOutput(""); };
+            output.appendChild(clearButton);
+        }
+
+        // Import JSON
+        document.getElementById('import-json').onclick = function () {
+            var importArea = document.getElementById('import-area');
+            importArea.classList.remove('hidden');
+            importArea.focus();
+        };
+        // Parse imported JSON
+        document.getElementById('import-area').onblur = function () {
+            var importArea = document.getElementById('import-area');
+            const raw = importArea.value.trim();
+            importArea.classList.add('hidden');
+            if (!raw) return;
+
+            let data;
+            try {
+                data = JSON.parse(raw);
+            } catch (e) {
+                alert("Invalid JSON format.");
+                return;
+            }
+
+            let newTimestamps;
+            let newVideoId = null;
+
+            // Check for new format: { videoId: '...', timestamps: [...] }
+            if (data && typeof data === 'object' && !Array.isArray(data) && data.videoId && Array.isArray(data.timestamps)) {
+                newVideoId = data.videoId;
+                newTimestamps = data.timestamps;
+            } else if (Array.isArray(data)) {
+                newTimestamps = data;
+            } else {
+                alert("Unsupported JSON structure.");
+                return;
+            }
+
+            newTimestamps.forEach(ts => {
+                if (ts.looping === undefined) {
+                    ts.looping = false;
+                }
+            });
+            timestamps = newTimestamps;
+            nextId = timestamps.length > 0 ? Math.max(...timestamps.map(item => item.id)) + 1 : 1;
+            displayTimestamps();
+            saveTimestamps();
+
+            // If a new video ID is part of the import, we need to load it.
+            if (newVideoId && newVideoId !== videoId) {
+                videoId = newVideoId;
+                document.getElementById('video-id-input').value = videoId;
+                document.getElementById('video-link').href = `https://youtube.com/watch?v=${videoId}`;
+
+                // Recreate player
+                if (player && player.destroy) player.destroy();
+                var playerDiv = document.getElementById('player');
+                playerDiv.innerHTML = '';
+                player = new YT.Player('player', {
+                    videoId: videoId,
+                    events: {
+                        'onReady': (event) => {
+                            // This is a custom onReady for import.
+                            // It should NOT clear timestamps.
+                            manageLocalDataButton();
+                        },
+                        'onStateChange': onPlayerStateChange
+                    }
+                });
+                setIframeAllowAttrs();
+            }
+        };
+
+        // Video ID input logic
+        document.getElementById('load-video-btn').addEventListener('click', function () {
+            videoId = document.getElementById('video-id-input').value.trim();
+            if (!videoId) {
+                alert("Please enter a video ID.");
+                return;
+            }
+            // Update video link
+            document.getElementById('video-link').href = `https://youtube.com/watch?v=${videoId}`;
+            // Remove and re-create the player
+            if (player && player.destroy) player.destroy();
+            var playerDiv = document.getElementById('player');
+            playerDiv.innerHTML = '';
+            player = new YT.Player('player', {
+                videoId: videoId,
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+            setIframeAllowAttrs();
+        });
+
+        // Modal logic
+        const showJsonModalBtn = document.getElementById('show-json-modal');
+        const jsonModal = document.getElementById('json-modal');
+        const closeJsonModalBtn = document.getElementById('close-json-modal');
+        const modalJsonOutput = document.getElementById('modal-json-output');
+        showJsonModalBtn.addEventListener('click', function () {
+            modalJsonOutput.textContent = JSON.stringify(timestamps, null, 2);
+            jsonModal.classList.remove('hidden');
+        });
+        closeJsonModalBtn.addEventListener('click', function () {
+            jsonModal.classList.add('hidden');
+        });
+        // Close modal when clicking outside the modal content
+        jsonModal.addEventListener('click', function (e) {
+            if (e.target === jsonModal) {
+                jsonModal.classList.add('hidden');
+            }
+        });
+
+        // Update json-output background color based on content
+        function setJsonOutput(content) {
+            const output = document.getElementById('json-output');
+            if (!content || content.trim() === "") {
+                output.className = "w-full rounded p-4 text-sm font-mono mt-2 relative transition-colors duration-200 bg-white";
+                output.textContent = "";
+            } else {
+                output.className = "w-full bg-gray-900 text-green-200 rounded p-4 text-sm font-mono mt-2 relative transition-colors duration-200";
+                output.innerHTML = `<span class='block whitespace-pre'>${content.replace(/</g, '&lt;')}</span>`;
+            }
+        }
+    </script>
+    <style>
+        .font-arabic {
+            font-family: 'Lateef', serif;
+        }
+    </style>
+</body>
+
+</html>
